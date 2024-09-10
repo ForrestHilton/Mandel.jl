@@ -689,7 +689,7 @@ mutable struct MandelView <: View
     colors::Observable{Matrix{RGBA{Float64}}}
     points::Observable{Vector{ComplexF64}}
     marks::Observable{Vector{ComplexF64}}
-    rays::Observable{Vector{Vector{ComplexF64}}}
+    rays::Vector{Observable{Vector{ComplexF64}}}
 
     coloring_data::ColoringData
 
@@ -700,7 +700,7 @@ mutable struct MandelView <: View
         colors = zeros(RGBA{Float64}, pixels, pixels)
         points = ComplexF64[center]
         marks = ComplexF64[]
-        rays = Vector{ComplexF64}[]
+        rays = Observable{Vector{ComplexF64}}[]
 
         return new(
             center,
@@ -729,7 +729,7 @@ mutable struct JuliaView <: View
     colors::Observable{Matrix{RGBA{Float64}}}
     points::Observable{Vector{ComplexF64}}
     marks::Observable{Vector{ComplexF64}}
-    rays::Observable{Vector{Vector{ComplexF64}}}
+    rays::Vector{Observable{Vector{ComplexF64}}}
 
     coloring_data::ColoringData
 
@@ -740,7 +740,7 @@ mutable struct JuliaView <: View
         colors = zeros(RGBA{Float64}, pixels, pixels)
         points = ComplexF64[center]
         marks = ComplexF64[]
-        rays = Vector{ComplexF64}[]
+        rays = Observable{Vector{ComplexF64}}[]
 
         return new(
             center,
@@ -920,7 +920,10 @@ function update_view!(view::View, d_system::DynamicalSystem, options::Options)
     notify(view.colors)
     notify(view.points)
     notify(view.marks)
-    notify(view.rays)
+
+    for ray in view.rays
+        notify(ray)
+    end
 
     return view
 end
@@ -932,7 +935,6 @@ function pick_parameter!(
     options::Options,
     point,
 )
-    println("here")
     julia.parameter = point
 
     julia.marks[] = orbit(
@@ -941,7 +943,10 @@ function pick_parameter!(
         julia.parameter,
         options.critical_length - 1,
     )
-    julia.rays[] = Rays.rays([julia.parameter, 0, 1])
+
+    for (ray, new_ray) in zip(julia.rays, Rays.rays([julia.parameter, 0, 1]))
+        ray[] = new_ray
+    end
 
     mandel.points[] = [julia.parameter]
 
@@ -1075,7 +1080,7 @@ function create_plot!(frame::Frame)
 
     lines!(frame.axis, mark_vectors, color = (:blue, 0.5), inspectable = false)
 
-    for ray in view.rays[]
+    for ray in view.rays
         ray_vectors = lift(ray) do zs
             xs, ys = to_pixel_space(view, zs)
             return Point2f.(xs, ys)
@@ -1562,7 +1567,7 @@ struct Viewer
         )
 
         julia.marks[] = [d_system.critical_point(julia.parameter)]
-        julia.rays[] = Rays.rays([julia.parameter, 0, 1])
+        julia.rays = [Observable(ray) for ray in Rays.rays([julia.parameter, 0, 1])]
         pick_orbit!(julia, d_system, options, julia.points[][begin])
 
         left_frame, right_frame = create_frames!(figure, options, mandel, julia)
