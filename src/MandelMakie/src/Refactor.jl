@@ -447,7 +447,6 @@ end
 # Finding Attractors
 # --------------------------------------------------------------------------------------- #
 
-
 function coeffs(polynomial, z)
     polynomial = expand(polynomial)
     d = Symbolics.degree(polynomial)
@@ -617,8 +616,8 @@ function find_attractors(f::Function, c::Number; projective::Bool = false)
     return a
 end
 
-
 function rays(func, parameter)
+    print(parameter)
     @variables z, c
     f = func(z, c) |> Symbolics.value
     parameter = convert(ComplexF64, parameter)
@@ -1185,9 +1184,11 @@ function create_plot!(frame::Frame)
             return Point2f.(xs, ys)
         end
 
-        push!(view.line_refs, lines!(frame.axis, ray_vectors, color=(:yellow, 0.5), inspectable=false))
+        push!(
+            view.line_refs,
+            lines!(frame.axis, ray_vectors, color = (:yellow, 0.5), inspectable = false),
+        )
     end
-
 
     scatter!(
         frame.axis,
