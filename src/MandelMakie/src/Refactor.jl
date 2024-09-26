@@ -3,6 +3,7 @@ module Refactor
 export Viewer, Attractor, get_attractors, get_parameter, critical_points
 
 using GLMakie, Symbolics, StaticArraysCore, LinearAlgebra, Polynomials, HypertextLiteral
+include("./Rays.jl")
 using GLMakie.Colors
 using GLMakie.Colors: LCHab
 using Crayons
@@ -524,6 +525,10 @@ function get_attractors(f::Function; projective::Bool = false, ε::Real = 1e-4)
 end
 
 function get_attractors(f::Function, c::Number; projective::Bool = false, ε::Real = 1e-4)
+    return find_attractors(h, 0.0im; projective = projective)
+end
+
+function find_attractors(f::Function, c::Number; projective::Bool = false)
     # If it is not a family ignores the parameter
     hasmethod(f, Tuple{ComplexF64,ComplexF64}) ||
         return get_attractors(f, projective = projective, ε = ε)
@@ -684,6 +689,7 @@ mutable struct MandelView <: View
     colors::Observable{Matrix{RGBA{Float64}}}
     points::Observable{Vector{ComplexF64}}
     marks::Observable{Vector{ComplexF64}}
+    rays::Observable{Vector{Vector{ComplexF64}}}
 
     coloring_data::ColoringData
 
@@ -694,6 +700,7 @@ mutable struct MandelView <: View
         colors = zeros(RGBA{Float64}, pixels, pixels)
         points = ComplexF64[center]
         marks = ComplexF64[]
+        rays = Vector{ComplexF64}[]
 
         return new(
             center,
@@ -704,6 +711,7 @@ mutable struct MandelView <: View
             colors,
             points,
             marks,
+            rays,
             coloring_data,
         )
     end
@@ -721,6 +729,7 @@ mutable struct JuliaView <: View
     colors::Observable{Matrix{RGBA{Float64}}}
     points::Observable{Vector{ComplexF64}}
     marks::Observable{Vector{ComplexF64}}
+    rays::Observable{Vector{Vector{ComplexF64}}}
 
     coloring_data::ColoringData
 
@@ -731,6 +740,7 @@ mutable struct JuliaView <: View
         colors = zeros(RGBA{Float64}, pixels, pixels)
         points = ComplexF64[center]
         marks = ComplexF64[]
+        rays = Vector{ComplexF64}[]
 
         return new(
             center,
@@ -742,6 +752,7 @@ mutable struct JuliaView <: View
             colors,
             points,
             marks,
+            rays,
             coloring_data,
         )
     end
@@ -909,6 +920,7 @@ function update_view!(view::View, d_system::DynamicalSystem, options::Options)
     notify(view.colors)
     notify(view.points)
     notify(view.marks)
+    notify(view.rays)
 
     return view
 end
@@ -920,6 +932,7 @@ function pick_parameter!(
     options::Options,
     point,
 )
+    println("here")
     julia.parameter = point
 
     julia.marks[] = orbit(
@@ -928,6 +941,7 @@ function pick_parameter!(
         julia.parameter,
         options.critical_length - 1,
     )
+    julia.rays[] = Rays.rays([julia.parameter, 0, 1])
 
     mandel.points[] = [julia.parameter]
 
@@ -1060,6 +1074,15 @@ function create_plot!(frame::Frame)
     end
 
     lines!(frame.axis, mark_vectors, color = (:blue, 0.5), inspectable = false)
+
+    for ray in view.rays[]
+        ray_vectors = lift(ray) do zs
+            xs, ys = to_pixel_space(view, zs)
+            return Point2f.(xs, ys)
+        end
+
+        lines!(frame.axis, ray_vectors, color = (:yellow, 0.5), inspectable = false)
+    end
 
     scatter!(
         frame.axis,
@@ -1539,6 +1562,7 @@ struct Viewer
         )
 
         julia.marks[] = [d_system.critical_point(julia.parameter)]
+        julia.rays[] = Rays.rays([julia.parameter, 0, 1])
         pick_orbit!(julia, d_system, options, julia.points[][begin])
 
         left_frame, right_frame = create_frames!(figure, options, mandel, julia)
