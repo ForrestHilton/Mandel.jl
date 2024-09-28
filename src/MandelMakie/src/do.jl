@@ -2,6 +2,7 @@ import Pkg
 Pkg.instantiate()
 
 function complex_sqrt(z)
+  # modified branch cut
   r = sqrt(real(z)^2 + imag(z)^2)
   θ = atan(imag(z), real(z))
   if θ < 0

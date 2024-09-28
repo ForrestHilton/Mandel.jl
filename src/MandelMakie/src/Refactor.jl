@@ -579,7 +579,7 @@ end
 
 function rays(func, parameter)
     print(parameter)
-    return []
+    # return []
     @variables z, c
     f = func(z, c) |> Symbolics.value
     parameter = convert(ComplexF64, parameter)
