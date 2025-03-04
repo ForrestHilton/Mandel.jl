@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.46
+# v0.19.38
 
 using Markdown
 using InteractiveUtils
@@ -48,6 +48,18 @@ Then, call `Viewer` or `Viewer3D` to open a window where you see the Mandelbrot 
 Viewer(q, mandel_center = -0.5, coloring_method=:convergence_time)
   ╠═╡ =#
 
+# ╔═╡ 3556d294-8f27-4c1c-8568-d2c548869e79
+# ╠═╡ disabled = true
+#=╠═╡
+v = Viewer((z,λ) -> z^2 + λ*z, crit=λ -> -λ/2, coloring_method=:convergence_time)
+  ╠═╡ =#
+
+# ╔═╡ 781ae5e9-545e-4c6b-9285-86f01a91e8ff
+# ╠═╡ disabled = true
+#=╠═╡
+MandelMakie.get_attractors(v)
+  ╠═╡ =#
+
 # ╔═╡ 5cdbb1b3-e783-4a1f-839d-b15c566bc1f3
 # ╠═╡ disabled = true
 #=╠═╡
@@ -62,10 +74,10 @@ md"""
 # ╔═╡ dc859310-0b21-4ede-a740-2b285f52a3df
 p2(z, c) = (z^2 - c) / (z^2 - 1)
 
-# ╔═╡ 781ae5e9-545e-4c6b-9285-86f01a91e8ff
+# ╔═╡ 8848c897-3fb7-4a7d-aa5f-d6b34438decb
 # ╠═╡ disabled = true
 #=╠═╡
-MandelMakie.get_attractors(v)
+v = Viewer(p2, mandel_center = -0.5, mandel_diameter = 6.0, julia_diameter = 6.0, coloring_method=:convergence_time)
   ╠═╡ =#
 
 # ╔═╡ ac6a0d56-8990-45a8-90e0-4b876024c1c1
@@ -89,15 +101,34 @@ Viewer3D(p2)
 # ╔═╡ fa18fc4e-c7a7-4268-ab77-368a277d2ae6
 md"""
 # The ``Per_3(0)`` family
+This is the parametrization with marked cycle
+```math
+\infty \overset{2}{\longmapsto} 1 \longmapsto c \longmapsto \infty
+```
+with free/active critical point at $0$.
+
+For some reason some sources have $-c$ in the cycle rather than $c$.
+
+(Where are the punctures?)
 """
 
 # ╔═╡ 363f547e-715c-4b5e-b657-5c41f8e674ca
-per3(z, c) = (z^2 - 1 - c + c^3) / (z^2 - c^2)
+per3(z, c) = (z^2 - 1 + c - c^3) / (z^2 - c^2)
 
 # ╔═╡ dd5a428d-c4af-4121-8905-902ca0ec1310
 # ╠═╡ disabled = true
 #=╠═╡
-Viewer(per3, mandel_diameter = 6.0, coloring_method=:convergence_time)
+v = Viewer(per3, mandel_diameter = 6.0, coloring_method=:convergence_time)
+  ╠═╡ =#
+
+# ╔═╡ 3abbe3bf-f58e-460c-b5f1-81c14e43dd6b
+#=╠═╡
+MandelMakie.get_attractors(v)
+  ╠═╡ =#
+
+# ╔═╡ 790a5bff-7422-41cc-a622-34056f5bace3
+#=╠═╡
+MandelMakie.get_parameter(v)
   ╠═╡ =#
 
 # ╔═╡ 744228c4-23f4-409a-805a-faa672e6fa9b
@@ -158,18 +189,24 @@ Viewer(
 )
   ╠═╡ =#
 
+# ╔═╡ e3045f93-acd6-4ccd-9898-3765b980e7f0
+
+
 # ╔═╡ 9f9585b3-011c-4ae9-b5ce-069ecef3a23e
 md"""
 ## Census maps
 """
 
-# ╔═╡ f9c1ce04-81de-4458-8bf1-8225956b1011
-f49(z) = (z / 3 - 1)^3 / (z - 1)
+# ╔═╡ 0ac919c3-7c22-48cc-9256-1600f3fc3d3f
 
-# ╔═╡ 1991d152-f45b-4b00-ab29-32f6d80c8997
+
+# ╔═╡ f9c1ce04-81de-4458-8bf1-8225956b1011
+f49(z) = z^2 * (z-1) / ((z - 2/3)^2 * (z + 1/3))
+
+# ╔═╡ 3bcf1908-b27b-4734-8315-08121ce1657b
 # ╠═╡ disabled = true
 #=╠═╡
-Fatou3D(f49, show_critical_points = true)
+Viewer(f49, coloring_method=:convergence_time, c=2/3)
   ╠═╡ =#
 
 # ╔═╡ f966a1a4-8b1a-4f84-8452-50ac7b0024e9
@@ -247,18 +284,6 @@ md"""
 MandelMakie.get_attractors(v)
   ╠═╡ =#
 
-# ╔═╡ 8848c897-3fb7-4a7d-aa5f-d6b34438decb
-# ╠═╡ disabled = true
-#=╠═╡
-v = Viewer(p2, mandel_center = -0.5, mandel_diameter = 6.0, julia_diameter = 6.0, coloring_method=:convergence_time)
-  ╠═╡ =#
-
-# ╔═╡ 3556d294-8f27-4c1c-8568-d2c548869e79
-# ╠═╡ disabled = true
-#=╠═╡
-v = Viewer((z,λ) -> z^2 + λ*z, crit=λ -> -λ/2, coloring_method=:convergence_time)
-  ╠═╡ =#
-
 # ╔═╡ Cell order:
 # ╟─1ba72fef-d5c4-4da4-9c17-4ba0096bf968
 # ╟─fb6c0e42-b256-47aa-a496-aa5e3e4a57cc
@@ -276,6 +301,8 @@ v = Viewer((z,λ) -> z^2 + λ*z, crit=λ -> -λ/2, coloring_method=:convergence_
 # ╟─fa18fc4e-c7a7-4268-ab77-368a277d2ae6
 # ╠═363f547e-715c-4b5e-b657-5c41f8e674ca
 # ╠═dd5a428d-c4af-4121-8905-902ca0ec1310
+# ╠═3abbe3bf-f58e-460c-b5f1-81c14e43dd6b
+# ╠═790a5bff-7422-41cc-a622-34056f5bace3
 # ╠═744228c4-23f4-409a-805a-faa672e6fa9b
 # ╠═ef15c50e-4158-4716-994b-c8885d9f81af
 # ╟─a9c743b4-7214-4b4d-b229-39aea38215bb
@@ -284,9 +311,11 @@ v = Viewer((z,λ) -> z^2 + λ*z, crit=λ -> -λ/2, coloring_method=:convergence_
 # ╠═bea223da-13a5-4662-9e1f-ed6b27cf6d54
 # ╠═2962904d-2c4d-4fe7-9c59-f735ab953bfa
 # ╠═43af11b5-9593-4950-b853-8fa8869e6ace
+# ╠═e3045f93-acd6-4ccd-9898-3765b980e7f0
 # ╠═9f9585b3-011c-4ae9-b5ce-069ecef3a23e
+# ╠═0ac919c3-7c22-48cc-9256-1600f3fc3d3f
 # ╠═f9c1ce04-81de-4458-8bf1-8225956b1011
-# ╠═1991d152-f45b-4b00-ab29-32f6d80c8997
+# ╠═3bcf1908-b27b-4734-8315-08121ce1657b
 # ╠═f966a1a4-8b1a-4f84-8452-50ac7b0024e9
 # ╠═22b75feb-5c5e-42a4-aecc-b2f5ef4a938b
 # ╟─79cbbb8b-8add-4d95-87f2-a9d825494636
