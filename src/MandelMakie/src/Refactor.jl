@@ -447,7 +447,6 @@ end
 # Finding Attractors
 # --------------------------------------------------------------------------------------- #
 
-
 function coeffs(polynomial, z)
     polynomial = expand(polynomial)
     d = Symbolics.degree(polynomial)
@@ -613,8 +612,7 @@ function get_attractors(f::Function, c::Number; projective::Bool = false, ε::Re
     return a
 end
 
-
-function rays(func, parameter,show_rays)
+function rays(func, parameter, show_rays)
     if show_rays == false
         return []
     end
@@ -628,7 +626,7 @@ function rays(func, parameter,show_rays)
         return Rays.auto_rays(coefficients, periods)
     else
         # list of angles
-        return Rays.rays(coefficients,show_rays)
+        return Rays.rays(coefficients, show_rays)
     end
 end
 
@@ -857,7 +855,7 @@ mutable struct JuliaView <: View
             Vector{Any}[],
             () -> nothing,
             coloring_data,
-            show_rays
+            show_rays,
         )
     end
 end
@@ -1049,10 +1047,10 @@ function pick_parameter!(
     )
 
     new_rays = rays(d_system.map, julia.parameter, julia.show_rays)
-    if length(julia.rays) == length(new_rays) 
-    for (ray, new_ray) in zip(julia.rays, new_rays)
-        ray[] = new_ray
-    end
+    if length(julia.rays) == length(new_rays)
+        for (ray, new_ray) in zip(julia.rays, new_rays)
+            ray[] = new_ray
+        end
     else
         julia.rays = [Observable(ray) for ray in new_rays]
         julia.refresh_rays()
@@ -1203,7 +1201,15 @@ function create_plot!(frame::Frame)
                 return Point2f.(xs, ys)
             end
 
-            push!(view.line_refs, lines!(frame.axis, ray_vectors, color=(:yellow, 0.5), inspectable=false))
+            push!(
+                view.line_refs,
+                lines!(
+                    frame.axis,
+                    ray_vectors,
+                    color = (:yellow, 0.5),
+                    inspectable = false,
+                ),
+            )
         end
     end
 
@@ -1643,12 +1649,13 @@ Viewer(f; crit = crit, mandel_diameter = 1.0)
   - `grid_width = 800`: Width (and height) of the grid of complex numbers used to plot \
     sets.
   - `compact_view = true`: If 'true' one of the plots is show as an inset plot, if \
-    `false` they are shown side-by-side. 
+    `false` they are shown side-by-side.
   - `show_rays = false`: Rays can only be computed for polynomials. Only the dynamic \
     rays can be computed as yet. If 'false', no  rays are shown. If a vector of \
     Rational64 is given, then the orbits of those  rays are displayed. If 'auto' \
     is given, a reasonable collection of rays are computed and displayed depending \
-    on the polynomial. 
+    on the polynomial.
+
 # Coloring Method Options
 
 For the options below, if you want to set different values for the Mandelbrot and Julia \
@@ -1742,14 +1749,15 @@ struct Viewer
             parameter = c,
             pixels = grid_width,
             coloring_data = julia_coloring,
-            show_rays=show_rays,
+            show_rays = show_rays,
         )
 
         store_schemes!(options, julia_coloring.attractors)
 
         julia.marks[] = [d_system.critical_point(julia.parameter)]
 
-        julia.rays = [Observable(ray) for ray in rays(d_system.map, julia.parameter, show_rays)]
+        julia.rays =
+            [Observable(ray) for ray in rays(d_system.map, julia.parameter, show_rays)]
         pick_orbit!(julia, d_system, options, julia.points[][begin])
 
         left_frame, right_frame = create_frames!(figure, options, mandel, julia)
