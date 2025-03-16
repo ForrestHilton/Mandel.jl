@@ -1,21 +1,15 @@
 using Symbolics
 @variables z c
 
-f = f = z^3 + c * z^2 + z
+f = z^3 + c * z^2 + z
 cpts = [-1 / 3 * c - 1 / 3 * sqrt(c^2 - 3), -1 / 3 * c + 1 / 3 * sqrt(c^2 - 3)]
 
-n = 2
-m = 2
 function symbolic_iterate(ex, n)
     for _ in 1:n
         ex = substitute(f, Dict([z => ex]))
     end
     return ex
 end
-ex1 = symbolic_iterate(cpts[1], n)
-ex2 = symbolic_iterate(cpts[2], m)
-
-eq = ex1 ~ ex2
 
 function symbolic_to_function(f)
     txt = string(build_function(f, c))
@@ -30,7 +24,7 @@ function symbolic_to_function(f)
         end
         new_code = new_code * line * "\n"
     end
-    # println(new_code)
+    println(new_code)
     return eval(Meta.parse(new_code))
 end
 
@@ -45,42 +39,58 @@ struct NewtonSolver
     maxiters::Int
 
     function NewtonSolver(eq, x; abstol = 1e-8, maxiters = 50)
-        f = eq.lhs - eq.rhs
-        ffunc = symbolic_to_function(f)
-        f′ = Symbolics.derivative(f, x)
+        f_ns = eq.lhs - eq.rhs
+        ffunc = symbolic_to_function(f_ns)
+        f′ = Symbolics.derivative(f_ns, x)
         fpfunc = symbolic_to_function(f′)
 
-        new(eq, x, f, f′, ffunc, fpfunc, abstol, maxiters)
+        new(eq, x, f_ns, f′, ffunc, fpfunc, abstol, maxiters)
     end
 end
 
 function solve(solver, x₀s)
     x₀s = collect(x₀s)
     xₙs = copy(x₀s)
+    converged = falses(length(x₀s))
 
+    solutions = similar(xₙs) # Preallocate space for solutions
     for _ in 1:solver.maxiters
+        non_converged_indices = findall(.!converged)
         xₙ₊₁s =
-            Complex(1) .-
-            Base.invokelatest(solver.ffunc, xₙs) ./ Base.invokelatest(solver.fpfunc, xₙs)
+            xₙs[non_converged_indices] .-
+            Base.invokelatest(solver.ffunc, xₙs[non_converged_indices]) ./
+            Base.invokelatest(solver.fpfunc, xₙs[non_converged_indices])
 
-        converged = abs.(xₙ₊₁s .- xₙs) .< solver.abstol
+        converged_indices =
+            non_converged_indices[abs.(xₙ₊₁s .- xₙs[non_converged_indices]).<solver.abstol]
+        converged[converged_indices] .= true
+        solutions[converged_indices] .= xₙs[converged_indices]
+        xₙs[.!converged] .= xₙ₊₁s[.!converged]
         if all(converged)
-            return xₙ₊₁s
-        else
-            xₙs[.!converged] .= xₙ₊₁s[.!converged]
+            break
         end
     end
-    error("Newton's method failed to converge for some initial guesses")
+
+    # I don't know if this is necessary
+    confirmed_indices =
+        findall(abs.(Base.invokelatest(solver.ffunc, solutions)) .< solver.abstol)
+
+    confirmed_solutions = solutions[confirmed_indices]
+    filtered_solutions = ComplexF64[]
+    for solution in confirmed_solutions
+        if isempty(filtered_solutions) ||
+           all(abs(solution - fs) > epsilon for fs in filtered_solutions)
+            push!(filtered_solutions, solution)
+        end
+    end
+
+    return filtered_solutions
 end
 
+ex1 = c^2
+ex2 = 2.0im
+eq = Equation(ex1, ex2)
 solver = NewtonSolver(eq, c)
-initial_guesses = [Complex(0.5 + (i / 25 * 1im)) for i in -50:50]
-println(solve(solver, initial_guesses[1:2]))
-results = @time solve(solver, initial_guesses)
 
-println.(results)
-
-# print(solve(ex1-ex2,c))
-# Sym{PythonCall.Core.Py}[-1.73205080756888, 1.73205080756888, -1.85790551759459*I, 1.8579055175
-# 9459*I, -1.76126765566016 - 0.501155962471181*I, -1.76126765566016 + 0.501155962471181*I, 1.76
-# 126765566016 - 0.501155962471181*I, 1.76126765566016 + 0.501155962471181*I]
+result = solve(solver, [Complex(1.2), Complex(-1.2)])
+println(result)
