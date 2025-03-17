@@ -1,9 +1,7 @@
 using Symbolics
+
 @variables z c
-
 f = z^3 + c * z^2 + z
-cpts = [-1 / 3 * c - 1 / 3 * sqrt(c^2 - 3), -1 / 3 * c + 1 / 3 * sqrt(c^2 - 3)]
-
 function symbolic_iterate(ex, n)
     for _ in 1:n
         ex = substitute(f, Dict([z => ex]))
@@ -24,7 +22,6 @@ function symbolic_to_function(f)
         end
         new_code = new_code * line * "\n"
     end
-    println(new_code)
     return eval(Meta.parse(new_code))
 end
 
@@ -61,25 +58,26 @@ function solve(solver, x₀s)
             Base.invokelatest(solver.ffunc, xₙs[non_converged_indices]) ./
             Base.invokelatest(solver.fpfunc, xₙs[non_converged_indices])
 
-        converged_indices =
+        new_converged_indices =
             non_converged_indices[abs.(xₙ₊₁s .- xₙs[non_converged_indices]).<solver.abstol]
-        converged[converged_indices] .= true
-        solutions[converged_indices] .= xₙs[converged_indices]
-        xₙs[.!converged] .= xₙ₊₁s[.!converged]
+        converged[new_converged_indices] .= true
+        solutions[new_converged_indices] .= xₙs[new_converged_indices]
+        xₙs[non_converged_indices] .= xₙ₊₁s
         if all(converged)
             break
         end
     end
 
     # I don't know if this is necessary
-    confirmed_indices =
-        findall(abs.(Base.invokelatest(solver.ffunc, solutions)) .< solver.abstol)
-
-    confirmed_solutions = solutions[confirmed_indices]
+    # confirmed_indices =
+    #     findall(abs.(Base.invokelatest(solver.ffunc, solutions)) .< solver.abstol)
+    #
+    # confirmed_solutions = solutions[confirmed_indices]
     filtered_solutions = ComplexF64[]
+    confirmed_solutions = solutions
     for solution in confirmed_solutions
         if isempty(filtered_solutions) ||
-           all(abs(solution - fs) > epsilon for fs in filtered_solutions)
+           all(abs(solution - fs) > 2e-8 for fs in filtered_solutions)
             push!(filtered_solutions, solution)
         end
     end
@@ -87,10 +85,33 @@ function solve(solver, x₀s)
     return filtered_solutions
 end
 
-ex1 = c^2
-ex2 = 2.0im
-eq = Equation(ex1, ex2)
-solver = NewtonSolver(eq, c)
+function search_rectangle(solver, z1::ComplexF64, z2::ComplexF64)
+    # Extract real and imaginary parts of the corners
+    println(solver.eq, z1, z2)
+    x1, y1 = real(z1), imag(z1)
+    x2, y2 = real(z2), imag(z2)
 
-result = solve(solver, [Complex(1.2), Complex(-1.2)])
-println(result)
+    # Ensure x1 is the leftmost point and y1 is the bottommost point
+    x_min, x_max = min(x1, x2), max(x1, x2)
+    y_min, y_max = min(y1, y2), max(y1, y2)
+
+    # Generate a grid of points within the rectangle
+    num_points_per_side = ceil(Int, sqrt(100)) # Adjust this to change the total number of points
+    real_points = range(x_min, stop = x_max, length = num_points_per_side)
+    imag_points = range(y_min, stop = y_max, length = num_points_per_side)
+    grid = [Complex(x, y) for x in real_points for y in imag_points]
+
+    # Use the grid points as initial guesses for the Newton's method solver
+    solutions = solve(solver, grid)
+    println(solutions)
+
+    return solutions
+end
+
+# ex1 = c^2
+# ex2 = 2.0im
+# eq = Equation(ex1, ex2)
+# solver = NewtonSolver(eq, c)
+#
+# result = search_rectangle(solver, Complex(-1.2 - 1.2im), Complex(1.2 + 1.2im))
+nothing

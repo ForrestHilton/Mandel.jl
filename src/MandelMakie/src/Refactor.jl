@@ -4,6 +4,7 @@ export Viewer, Attractor, get_attractors, get_parameter, critical_points
 
 using GLMakie, Symbolics, StaticArraysCore, LinearAlgebra, Polynomials, HypertextLiteral
 include("./Rays.jl")
+include("./NewtonsMethod.jl")
 using GLMakie.Colors
 using Crayons
 
@@ -797,7 +798,7 @@ mutable struct MandelView <: View
 
         colors = zeros(RGBA{Float64}, pixels, pixels)
         points = ComplexF64[center]
-        marks = Observable{Vector{ComplexF64}}[]
+        marks = [Observable(ComplexF64[])]
         rays = Observable{Vector{ComplexF64}}[]
 
         return new(
@@ -1042,14 +1043,26 @@ function update_view!(view::View, d_system::DynamicalSystem, options::Options)
     return view
 end
 
-function set_marks!(d_system::DynamicalSystem, julia::JuliaView, options::Options)
+function set_marks_j!(d_system::DynamicalSystem, julia::JuliaView, options::Options)
     c = julia.parameter
-    julia.marks
     cpts = [-1 / 3 * c - 1 / 3 * sqrt(c^2 - 3), -1 / 3 * c + 1 / 3 * sqrt(c^2 - 3)]
     for (marks, crpt, n) in zip(julia.marks, cpts, [options.n, options.m])
         marks[] =
             orbit(d_system.map, crpt, julia.parameter, n + options.critical_length - 1)
     end
+end
+
+function set_marks_m!(d_system::DynamicalSystem, mandel::MandelView, options::Options)
+    # @variables z c -- this is in the NewtonsMethod File
+    cpts = [-1 / 3 * c - 1 / 3 * sqrt(c^2 - 3), -1 / 3 * c + 1 / 3 * sqrt(c^2 - 3)]
+    n = options.n
+    m = options.m
+    eq = @time Equation(symbolic_iterate(cpts[1], n), symbolic_iterate(cpts[2], m))
+    solver = @time NewtonSolver(eq, c)
+    corner, step = corner_and_step(mandel)
+    c1 = corner
+    c2 = corner + mandel.diameter * (1.0 + 1.0im)
+    mandel.marks[1][] = @time search_rectangle(solver, c1, c2)
 end
 
 function pick_parameter!(
@@ -1060,7 +1073,7 @@ function pick_parameter!(
     point,
 )
     julia.parameter = point
-    set_marks!(d_system, julia, options)
+    set_marks_j!(d_system, julia, options)
     julia.refresh_marks()
 
     new_rays = rays(d_system.map, julia.parameter, julia.show_rays)
@@ -1211,7 +1224,9 @@ function create_plot!(frame::Frame)
                 return Point2f.(xs, ys)
             end
 
-            lines!(frame.axis, mark_vectors, color = (:blue, 0.5), inspectable = false)
+            if view isa JuliaView
+                lines!(frame.axis, mark_vectors, color = (:blue, 0.5), inspectable = false)
+            end
 
             scatter!(
                 frame.axis,
@@ -1494,6 +1509,14 @@ function add_buttons!(figure, left_frame, right_frame, mandel, julia, d_system, 
             validator = Float64,
         ),
     )
+    inputs[:compute] = Button(layout[1, button_shift+13], label = "C", halign = :left)
+    # inputs[:cumulative] = Button(layout[1, button_shift+14], label = "CU", halign = :left)
+
+    on(inputs[:compute].clicks, priority = 200) do event
+        inputs[:compute].label = "X"
+        set_marks_m!(d_system, mandel, options)
+        inputs[:compute].label = "C"
+    end
 
     on(inputs[:max_iter].stored_string) do s
         options.max_iterations = parse(Int, s)
@@ -1509,15 +1532,15 @@ function add_buttons!(figure, left_frame, right_frame, mandel, julia, d_system, 
     on(inputs[:critical_length].stored_string) do s
         options.critical_length = parse(Int, s)
 
-        set_marks!(d_system, julia, options)
+        set_marks_j!(d_system, julia, options)
     end
     on(inputs[:m].stored_string) do s
         options.m = parse(Int, s)
-        set_marks!(d_system, julia, options)
+        set_marks_j!(d_system, julia, options)
     end
     on(inputs[:n].stored_string) do s
         options.n = parse(Int, s)
-        set_marks!(d_system, julia, options)
+        set_marks_j!(d_system, julia, options)
     end
 
     on(inputs[:convergence_radius].stored_string) do s
@@ -1802,7 +1825,7 @@ struct Viewer
 
         store_schemes!(options, julia_coloring.attractors)
 
-        set_marks!(d_system, julia, options)
+        set_marks_j!(d_system, julia, options)
 
         julia.rays =
             [Observable(ray) for ray in rays(d_system.map, julia.parameter, show_rays)]
