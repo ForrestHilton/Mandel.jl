@@ -1057,12 +1057,10 @@ function set_marks_m!(d_system::DynamicalSystem, mandel::MandelView, options::Op
     cpts = [-1 / 3 * c - 1 / 3 * sqrt(c^2 - 3), -1 / 3 * c + 1 / 3 * sqrt(c^2 - 3)]
     n = options.n
     m = options.m
-    eq = @time Equation(symbolic_iterate(cpts[1], n), symbolic_iterate(cpts[2], m))
-    solver = @time NewtonSolver(eq, c)
     corner, step = corner_and_step(mandel)
     c1 = corner
     c2 = corner + mandel.diameter * (1.0 + 1.0im)
-    mandel.marks[1][] = @time search_rectangle(solver, c1, c2)
+    mandel.marks[1][] = search_rectangle(n, m, c1, c2)
 end
 
 function pick_parameter!(
