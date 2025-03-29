@@ -1071,6 +1071,7 @@ function pick_parameter!(
     point,
 )
     julia.parameter = point
+    println(point)
     set_marks_j!(d_system, julia, options)
     julia.refresh_marks()
 
@@ -1508,7 +1509,14 @@ function add_buttons!(figure, left_frame, right_frame, mandel, julia, d_system, 
         ),
     )
     inputs[:compute] = Button(layout[1, button_shift+13], label = "C", halign = :left)
+    # inputs[:rays] = Button(layout[1, button_shift+14], label = "R", halign = :left)
     # inputs[:cumulative] = Button(layout[1, button_shift+14], label = "CU", halign = :left)
+
+    # on(inputs[:rays].clicks, priority = 200) do event
+    #     inputs[:rays].label = "X"
+    #
+    #     inputs[:rays].label = "R"
+    # end
 
     on(inputs[:compute].clicks, priority = 200) do event
         inputs[:compute].label = "X"

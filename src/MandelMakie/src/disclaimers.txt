@@ -1,0 +1,5 @@
+If two solutions to the same equation are within 2e-8 of each other, 
+only one will show.
+
+I only start with about 100 initial guesses of newtons method for each camera view, so there is no grantee that we find every solution.
+

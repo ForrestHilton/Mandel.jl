@@ -179,7 +179,7 @@ function auto_rays(coefficients::Vector{ComplexF64}, periods)
     w = PolynomialWrapper(coefficients)
     lamination::Vector{Vector{Rational{Int64}}} = []
     d = w.degree
-    for period in 1:maximum(periods)
+    for period in 1:max(maximum(periods), 1)
         denom = d^period - 1
         classes = []
         for numeraitor in 0:(denom-1)

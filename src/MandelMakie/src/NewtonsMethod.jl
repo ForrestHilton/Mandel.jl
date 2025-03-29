@@ -91,14 +91,12 @@ function derivative(cv, n, m)
 end
 
 function solve(n, m, x₀s; abstol = 1e-8, maxiters = 50)
-    println("here")
     x₀s = collect(x₀s)
     xₙs = copy(x₀s)
     converged = falses(length(x₀s))
 
     solutions = similar(xₙs) # Preallocate space for solutions
     for _ in 1:maxiters
-        println(xₙs)
         non_converged_indices = findall(.!converged)
         xₙ₊₁s =
             xₙs[non_converged_indices] .-
@@ -154,9 +152,6 @@ function search_rectangle(n, m, z1::ComplexF64, z2::ComplexF64)
 end
 
 # println(value(ComplexF64(1), 1, 1))
-println(apfunc(ComplexF64(1)))
-println(bpfunc(ComplexF64(1)))
-println(derivative(ComplexF64(1.7), 2, 2)) # 0.0 - 0.261891400439462im
 # 0.0 + 0.6285393610547088im -- expected
 
 # ex1 = c^2
