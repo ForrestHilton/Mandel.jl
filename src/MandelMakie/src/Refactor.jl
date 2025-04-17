@@ -616,10 +616,27 @@ function rays(func, parameter, show_rays, options)
     if show_rays == false
         return []
     end
-    @variables z, c
-    f = func(z, c) |> Symbolics.value
-    parameter = convert(ComplexF64, parameter)
-    coefficients = coeffs(substitute(f, Dict(c => parameter)), z)
+    # @variables z, c
+    # f = func(z, c) |> Symbolics.value
+    # parameter = convert(ComplexF64, parameter)
+    # coefficients = coeffs(substitute(f, Dict(c => parameter)), z)
+    c = convert(ComplexF64, parameter)
+    function complex_sqrt(z)
+        r = sqrt(real(z)^2 + imag(z)^2)
+        θ = atan(imag(z), real(z))
+        if θ < 0
+            θ += 2 * pi
+        end
+        θ = θ / 2
+        return sqrt(r) * (cos(θ) + im * sin(θ))
+    end
+
+    coefficients = [
+        ComplexF64(3 / 4 * c - 3 * sqrt(c^2 / 16 - 1 / 3)),
+        ComplexF64(0),
+        ComplexF64(-c / 2),
+        ComplexF64(1 / 3),
+    ]
 
     if show_rays == :auto
         periods = [options.period]
@@ -1666,7 +1683,14 @@ end
 function get_coloring_data(map, c, coloring_method, projective_metric)
     if coloring_method == :escape_time
         method = escape_time
-        a = get_attractor(map, c + 100, ∞, projective = projective_metric)
+        # a = Attractor([Inf + Inf * im],2,)
+        a = get_attractor(
+            (z, c) -> z^3 / 3 - c / 2 * z^2 + 3 / 4 * c,
+            c + 100,
+            ∞,
+            projective = projective_metric,
+        )
+        # a = get_attractor(map, c + 100, ∞, projective = projective_metric)
         attractors = [a]
         update_attractors = false
     elseif coloring_method == :convergence_time
