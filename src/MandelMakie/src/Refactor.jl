@@ -1290,16 +1290,6 @@ function save_view(filename::String, view::View)
     Makie.save(filename, fig)
 end
 
-function set_red_point_useing_mouse_position()
-    mp = mouseposition_px(scene)
-    point = to_complex_plane(view, to_world_at_start(mp))
-    if view isa MandelView
-        pick_parameter!(julia, view, d_system, options, point)
-    elseif view isa JuliaView
-        pick_orbit!(view, d_system, options, point)
-    end
-end
-
 function add_frame_events!(
     figure::Figure,
     frame::Frame,
@@ -1324,6 +1314,17 @@ function add_frame_events!(
     is_topframe = frame == topframe
     z_level = is_topframe ? 10 : 0
 
+    function set_red_point_useing_mouse_position()
+        mp = mouseposition_px(scene)
+        view = frame.view[]
+        point = to_complex_plane(view, to_world_at_start(mp))
+        if view isa MandelView
+            pick_parameter!(julia, view, d_system, options, point)
+        elseif view isa JuliaView
+            pick_orbit!(view, d_system, options, point)
+        end
+    end
+
     on(events(scene).mousebutton) do event
         is_zooming && return Consume(false)
 
@@ -1338,7 +1339,7 @@ function add_frame_events!(
                 to_world_at_start = z -> to_world(scene, z)
                 dragstart = to_world_at_start(mp)
 
-            elseif event.action == Mouse.release && !(drag_mode == :notdragging)
+            elseif event.action == Mouse.release && (drag_mode == :rightclick)
                 dragend = to_world_at_start(mp)
                 view.center +=
                     to_complex_plane(view, dragstart) - to_complex_plane(view, dragend)
@@ -1375,7 +1376,11 @@ function add_frame_events!(
                     return Consume(true)
                 else
                     set_red_point_useing_mouse_position()
+                    drag_mode = :leftclick
                 end
+            elseif event.action == Mouse.release && (drag_mode == :leftclick)
+                set_red_point_useing_mouse_position()
+                drag_mode = :notdragging
             end
         end
 
@@ -1387,6 +1392,8 @@ function add_frame_events!(
             # TODO: figure out differences between mouseposition mouseposition_px because we use both in a way that I believe causes issues.
             mp = mouseposition(scene)
             translate!(scene, mp - dragstart..., z_level)
+        elseif (drag_mode == :leftclick)
+            set_red_point_useing_mouse_position()
         end
     end
 
@@ -1399,9 +1406,6 @@ function add_frame_events!(
         end
     end
 
-    frame.events[:dragging] = dragging
-    frame.events[:dragstart] = dragstart
-    frame.events[:dragend] = dragstart
     frame.events[:is_zooming] = is_zooming
     frame.events[:zooming] = zooming
 
