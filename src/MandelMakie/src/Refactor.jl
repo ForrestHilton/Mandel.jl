@@ -776,6 +776,7 @@ mutable struct Options
     coloring_schemes::Vector{ColoringScheme}
     pullbacks::Int
     period::Int
+    drag_setting::Symbol
 end
 
 mutable struct MandelView <: View
@@ -1374,11 +1375,14 @@ function add_frame_events!(
 
                     change_color!(figure, julia, i, d_system, options)
                     return Consume(true)
-                else
+                elseif options.drag_setting == :both ||
+                       options.drag_setting == :dynamic_only && view isa JuliaView
                     set_red_point_useing_mouse_position()
                     drag_mode = :leftclick
+                else
+                    set_red_point_useing_mouse_position()
                 end
-            elseif event.action == Mouse.release && (drag_mode == :leftclick)
+            elseif event.action == Mouse.release && drag_mode == :leftclick
                 set_red_point_useing_mouse_position()
                 drag_mode = :notdragging
             end
@@ -1737,10 +1741,15 @@ Viewer(f; crit = crit, mandel_diameter = 1.0)
     `false` they are shown side-by-side.
   - `show_rays = false`: Rays can only be computed for polynomials. Only the dynamic \
     rays can be computed as yet. If 'false', no  rays are shown. If a vector of \
-    Rational64 is given, then the orbits of those  rays are displayed. If :all \
+    Rational64 is given, then the orbits of those  rays are displayed. If `:all` \
     is given then a button will be added to compute all the rays up to a period and \
     pullbacks. If :auto is given, then those rays are then filtered by weather they
     land at a cut point, and a lamination is printed.
+  - `left_click_drag = :dynamic_only`: By default, in the dynamic plain, the red \
+    point will be continuously updated to the mouse postion if the left button\
+    remains pressed. This may be undesiorable for performace reasons. Set to `:neither`\
+    to disable. Alternately, it may be tolerable to enable this in both plains with\
+    `:both`.
 
 # Coloring Method Options
 
@@ -1792,6 +1801,7 @@ struct Viewer
         coloring_method = :escape_time,
         projective_metric = false,
         show_rays = false,
+        left_click_drag = :dynamic_only,
     )
         # Put options in standard form
         projective_metrics = make_tuple(projective_metric)
@@ -1814,6 +1824,7 @@ struct Viewer
             ColoringScheme[],
             0,
             1,
+            left_click_drag,
         )
         figure = Figure(size = (800, 850))
 
