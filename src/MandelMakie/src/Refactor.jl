@@ -793,6 +793,7 @@ mutable struct Options
     coloring_schemes::Vector{ColoringScheme}
     pullbacks::Int
     period::Int
+    drag_setting::Symbol
 end
 
 mutable struct MandelView <: View
@@ -1319,7 +1320,7 @@ function add_frame_events!(
     scene = axis.scene
 
     # Mouse Events
-    dragging = false
+    drag_mode = :notdragging
     dragstart = Point2f(0.0)
     dragend = Point2f(0.0)
 
@@ -1331,6 +1332,17 @@ function add_frame_events!(
     is_topframe = frame == topframe
     z_level = is_topframe ? 10 : 0
 
+    function set_red_point_useing_mouse_position()
+        mp = mouseposition_px(scene)
+        view = frame.view[]
+        point = to_complex_plane(view, to_world_at_start(mp))
+        if view isa MandelView
+            pick_parameter!(julia, view, d_system, options, point)
+        elseif view isa JuliaView
+            pick_orbit!(view, d_system, options, point)
+        end
+    end
+
     on(events(scene).mousebutton) do event
         is_zooming && return Consume(false)
 
@@ -1341,18 +1353,18 @@ function add_frame_events!(
             if event.action == Mouse.press &&
                is_mouseinside(axis) &&
                (is_topframe || !is_mouseinside(topframe.axis))
-                dragging = true
+                drag_mode = :rightclick
                 to_world_at_start = z -> to_world(scene, z)
                 dragstart = to_world_at_start(mp)
 
-            elseif event.action == Mouse.release && dragging
+            elseif event.action == Mouse.release && (drag_mode == :rightclick)
                 dragend = to_world_at_start(mp)
                 view.center +=
                     to_complex_plane(view, dragstart) - to_complex_plane(view, dragend)
                 translate!(scene, 0, 0, z_level)
                 update_view!(view, d_system, options)
                 reset_limits!(axis)
-                dragging = false
+                drag_mode = :notdragging
             end
         end
 
@@ -1380,14 +1392,16 @@ function add_frame_events!(
 
                     change_color!(figure, julia, i, d_system, options)
                     return Consume(true)
+                elseif options.drag_setting == :both ||
+                       options.drag_setting == :dynamic_only && view isa JuliaView
+                    set_red_point_useing_mouse_position()
+                    drag_mode = :leftclick
+                else
+                    set_red_point_useing_mouse_position()
                 end
-
-                point = to_complex_plane(view, to_world_at_start(mp))
-                if view isa MandelView
-                    pick_parameter!(julia, view, d_system, options, point)
-                elseif view isa JuliaView
-                    pick_orbit!(view, d_system, options, point)
-                end
+            elseif event.action == Mouse.release && drag_mode == :leftclick
+                set_red_point_useing_mouse_position()
+                drag_mode = :notdragging
             end
         end
 
@@ -1395,9 +1409,12 @@ function add_frame_events!(
     end
 
     on(events(scene).mouseposition) do event
-        if dragging
+        if (drag_mode == :rightclick)
+            # TODO: figure out differences between mouseposition mouseposition_px because we use both in a way that I believe causes issues.
             mp = mouseposition(scene)
             translate!(scene, mp - dragstart..., z_level)
+        elseif (drag_mode == :leftclick)
+            set_red_point_useing_mouse_position()
         end
     end
 
@@ -1410,9 +1427,6 @@ function add_frame_events!(
         end
     end
 
-    frame.events[:dragging] = dragging
-    frame.events[:dragstart] = dragstart
-    frame.events[:dragend] = dragstart
     frame.events[:is_zooming] = is_zooming
     frame.events[:zooming] = zooming
 
@@ -1751,10 +1765,15 @@ Viewer(f; crit = crit, mandel_diameter = 1.0)
     `false` they are shown side-by-side.
   - `show_rays = false`: Rays can only be computed for polynomials. Only the dynamic \
     rays can be computed as yet. If 'false', no  rays are shown. If a vector of \
-    Rational64 is given, then the orbits of those  rays are displayed. If :all \
+    Rational64 is given, then the orbits of those  rays are displayed. If `:all` \
     is given then a button will be added to compute all the rays up to a period and \
     pullbacks. If :auto is given, then those rays are then filtered by weather they
     land at a cut point, and a lamination is printed.
+  - `left_click_drag = :dynamic_only`: By default, in the dynamic plain, the red \
+    point will be continuously updated to the mouse postion if the left button\
+    remains pressed. This may be undesiorable for performace reasons. Set to `:neither`\
+    to disable. Alternately, it may be tolerable to enable this in both plains with\
+    `:both`.
 
 # Coloring Method Options
 
@@ -1806,6 +1825,7 @@ struct Viewer
         coloring_method = :escape_time,
         projective_metric = false,
         show_rays = false,
+        left_click_drag = :dynamic_only,
     )
         # Put options in standard form
         projective_metrics = make_tuple(projective_metric)
@@ -1828,6 +1848,7 @@ struct Viewer
             ColoringScheme[],
             0,
             1,
+            left_click_drag,
         )
         figure = Figure(size = (800, 850))
 
