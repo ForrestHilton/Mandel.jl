@@ -1678,8 +1678,8 @@ function get_coloring_data(map, c, coloring_method, projective_metric)
     if coloring_method == :escape_time
         method = escape_time
         # a = Attractor([Inf + Inf * im],2,)
-        a = get_attractor(
-            (z, c) -> z^3 / 3 - c / 2 * z^2 + 3 / 4 * c,
+        a = get_attractor( # TODO: create attractor in a polynomial dependent way
+            (z, c) -> z^3,
             c + 100,
             ∞,
             projective = projective_metric,
@@ -1840,7 +1840,7 @@ struct Viewer
         mandel_diameter = 4.0,
         julia_center = 0.0im,
         julia_diameter = 4.0,
-        compact_view = true,
+        compact_view = false,
         grid_width = 800,
         coloring_method = :escape_time,
         projective_metric = false,
