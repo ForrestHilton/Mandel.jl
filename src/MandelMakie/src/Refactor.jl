@@ -1769,7 +1769,7 @@ Viewer(f; crit = crit, mandel_diameter = 1.0)
   - `julia_diameter = 4.0`: Initial diameter of the Julia plot.
   - `grid_width = 800`: Width (and height) of the grid of complex numbers used to plot \
     sets.
-  - `compact_view = true`: If 'true' one of the plots is show as an inset plot, if \
+  - `compact_view = false`: If 'true' one of the plots is show as an inset plot, if \
     `false` they are shown side-by-side.
   - `show_rays = false`: Rays can only be computed for polynomials. Only the dynamic \
     rays can be computed as yet. If 'false', no  rays are shown. If a vector of \
