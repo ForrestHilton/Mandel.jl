@@ -776,7 +776,10 @@ mutable struct Options
     coloring_schemes::Vector{ColoringScheme}
     pullbacks::Int
     period::Int
+<<<<<<< HEAD
     drag_setting::Symbol
+=======
+>>>>>>> 1df4ad8e7e6a048a2ad3158af17efa246f3d1ba3
 end
 
 mutable struct MandelView <: View
@@ -1069,6 +1072,16 @@ function pick_parameter!(
     set_marks!(d_system, julia, options)
     julia.refresh_marks()
 
+<<<<<<< HEAD
+=======
+    julia.marks[] = orbit(
+        d_system.map,
+        d_system.critical_point(julia.parameter),
+        julia.parameter,
+        options.critical_length - 1,
+    )
+
+>>>>>>> 1df4ad8e7e6a048a2ad3158af17efa246f3d1ba3
     julia.rays = []
     julia.refresh_rays()
 
@@ -1745,18 +1758,18 @@ Viewer(f; crit = crit, mandel_diameter = 1.0)
   - `julia_diameter = 4.0`: Initial diameter of the Julia plot.
   - `grid_width = 800`: Width (and height) of the grid of complex numbers used to plot \
     sets.
-  - `compact_view = true`: If 'true' one of the plots is show as an inset plot, if \
+  - `compact_view = false`: If 'true' one of the plots is show as an inset plot, if \
     `false` they are shown side-by-side.
   - `show_rays = false`: Rays can only be computed for polynomials. Only the dynamic \
-    rays can be computed as yet. If 'false', no  rays are shown. If a vector of \
-    Rational64 is given, then the orbits of those  rays are displayed. If `:all` \
+    rays can be computed as yet. If `false`, no  rays are shown. If a vector of \
+    Rational64 is given, then the orbits of those rays are displayed. If `:all` \
     is given then a button will be added to compute all the rays up to a period and \
-    pullbacks. If :auto is given, then those rays are then filtered by weather they
+    pullbacks. If `:auto` is given, then those rays are then filtered by whether they \
     land at a cut point, and a lamination is printed.
   - `left_click_drag = :dynamic_only`: By default, in the dynamic plain, the red \
-    point will be continuously updated to the mouse postion if the left button\
-    remains pressed. This may be undesiorable for performace reasons. Set to `:neither`\
-    to disable. Alternately, it may be tolerable to enable this in both plains with\
+    point will be continuously updated to the mouse postion if the left button \
+    remains pressed. This may be undesiorable for performace reasons. Set to `:neither` \
+    to disable. Alternately, it may be tolerable to enable this in both plains with \
     `:both`.
 
 # Coloring Method Options
