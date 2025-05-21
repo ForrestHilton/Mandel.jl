@@ -127,15 +127,20 @@ end
 struct DynamicalSystem
     map::Function
     critical_point::Function
+    par_critical_point::Function
 
-    function DynamicalSystem(f::Function, critical_point::Function)
+    function DynamicalSystem(
+        f::Function,
+        critical_point::Function,
+        par_critical_point::Function,
+    )
         if hasmethod(f, ComplexF64) && !hasmethod(f, Tuple{ComplexF64,ComplexF64})
             h = (z, c) -> f(z)
         else
             h = (z, c) -> f(z, c)
         end
 
-        return new(h, critical_point)
+        return new(h, critical_point, par_critical_point)
     end
 end
 
@@ -994,7 +999,7 @@ function update_grid!(
             view.colors[],
             j,
             d_system.map,
-            d_system.critical_point,
+            d_system.par_critical_point,
             corner,
             step,
             view.pixels,
@@ -1823,6 +1828,7 @@ struct Viewer
     function Viewer(
         f;
         crit = 0.0im,
+        par_crit = :same,
         c = 0.0im,
         mandel_center = 0.0im,
         mandel_diameter = 4.0,
@@ -1843,7 +1849,11 @@ struct Viewer
         is_family = hasmethod(f, Tuple{ComplexF64,ComplexF64})
 
         # Create Viewer Data
-        d_system = DynamicalSystem(f, crit)
+        if par_crit == :same
+            d_system = DynamicalSystem(f, crit, crit)
+        else
+            d_system = DynamicalSystem(f, crit, par_crit)
+        end
         options = Options(
             1e-3,
             200,
