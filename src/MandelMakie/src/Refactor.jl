@@ -1223,6 +1223,7 @@ function create_plot!(frame::Frame)
         frame.axis,
         point_vectors,
         color = (:red, 1.0),
+        markersize = 15,
         inspector_label = (self, i, p) -> let
             z = to_complex_plane(view, p)
             "x: $(real(z))\ny: $(imag(z))"
@@ -1240,12 +1241,13 @@ function create_plot!(frame::Frame)
                 return Point2f.(xs, ys)
             end
 
-            lines!(frame.axis, mark_vectors, color = (:blue, 0.5), inspectable = false)
+            lines!(frame.axis, mark_vectors, color = (:magenta, 0.5), inspectable = false)
 
             scatter!(
                 frame.axis,
                 mark_vectors,
-                color = (:blue, 1.0),
+                color = (:magenta, 1.0),
+                markersize = 15,
                 inspector_label = (self, i, p) -> let
                     z = to_complex_plane(view, p)
                     "x: $(real(z))\ny: $(imag(z))"
